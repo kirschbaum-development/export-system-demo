@@ -4,12 +4,15 @@ namespace App\Livewire;
 
 use App\Models\Team;
 use App\Models\User;
+use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
+use League\Csv\Writer;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Table extends Component
 {
@@ -27,7 +30,31 @@ class Table extends Component
         $this->resetPage();
     }
 
-    public function getQuery()
+    public function export(): StreamedResponse
+    {
+        $header = ['name', 'email', 'role'];
+        $records = $this->getQuery()->get()->map(fn (User $user): array => [
+            $user->name,
+            $user->email,
+            $user->pivot->role,
+        ])->all();
+
+        $csv = Writer::createFromString();
+        $csv->insertOne($header);
+        $csv->insertAll($records);
+
+        Notification::make()
+            ->title('Export completed')
+            ->body('Downloading...')
+            ->info()
+            ->send();
+
+        return response()->streamDownload(
+            fn () => print($csv->toString()),
+            'users.csv',
+            ['Content-Type' => 'text/csv'],
+        );
+    }
 
     public function getQuery(): BelongsToMany
     {

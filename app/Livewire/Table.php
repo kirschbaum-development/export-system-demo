@@ -6,6 +6,7 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -27,6 +28,8 @@ class Table extends Component
     }
 
     public function getQuery()
+
+    public function getQuery(): BelongsToMany
     {
         $team = Team::first();
 

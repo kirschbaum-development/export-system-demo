@@ -30,4 +30,8 @@
     <div class="max-w-3xl">
         {{ $users->links() }}
     </div>
+
+    <button wire:click="export" type="button">
+        Export
+    </button>
 </div>

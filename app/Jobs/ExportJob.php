@@ -52,7 +52,7 @@ class ExportJob implements ShouldQueue
         $csv = Writer::createFromString();
         $csv->insertOne($this->header);
 
-        $fileName = str($query->getModel()::class)
+        $fileName = (string) str($query->getModel()::class)
             ->classBasename()
             ->plural()
             ->snake()

@@ -5,15 +5,13 @@ namespace App\Jobs;
 use AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade;
 use App\Models\User;
 use Closure;
-use Filament\Notifications\Actions\Action;
-use Filament\Notifications\Notification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\SerializableClosure\SerializableClosure;
@@ -53,18 +51,6 @@ class ExportJob implements ShouldQueue
         $csv = Writer::createFromString();
         $csv->insertOne($this->header);
 
-        $recordRows = [];
-        $mapper = $this->mapper->getClosure();
-
-        $query->chunkById(100, function (Collection $records) use ($mapper, &$recordRows) {
-            $recordRows = [
-                ...$recordRows,
-                ...$records->map($mapper)->all(),
-            ];
-        }, column: $query->getModel()->getQualifiedKeyName(), alias: $query->getModel()->getKeyName());
-
-        $csv->insertAll($recordRows);
-
         $fileName = str($query->getModel()::class)
             ->classBasename()
             ->plural()
@@ -75,14 +61,18 @@ class ExportJob implements ShouldQueue
 
         Storage::put("exports/{$fileName}", $csv->toString(), options: 'private');
 
-        $csvUrl = Storage::temporaryUrl("exports/{$fileName}", now()->addDay());
-
-        Notification::make()
-            ->title('Export completed')
-            ->actions([
-                Action::make('download')->url($csvUrl),
-            ])
-            ->success()
-            ->sendToDatabase($this->user);
+        Bus::chain([
+            Bus::batch([
+                new PrepareExportBatchJob(
+                    $this->query,
+                    $this->mapper,
+                    $fileName,
+                ),
+            ]),
+            new SendExportNotificationJob(
+                $fileName,
+                $this->user,
+            ),
+        ])->dispatch();
     }
 }

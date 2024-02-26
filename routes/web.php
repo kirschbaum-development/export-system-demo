@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DownloadExportController;
 use App\Livewire\Table;
 use Illuminate\Support\Facades\Route;
 
@@ -15,3 +16,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', Table::class);
+Route::get('/exports/{fileName}', DownloadExportController::class)
+    ->middleware(['signed'])
+    ->name('exports.show');

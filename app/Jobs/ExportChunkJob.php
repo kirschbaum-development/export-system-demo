@@ -5,6 +5,7 @@ namespace App\Jobs;
 use AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade;
 use Illuminate\Bus\Batchable;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -27,6 +28,7 @@ class ExportChunkJob implements ShouldQueue
     public function __construct(
         protected string $query,
         protected array $records,
+        protected int $page,
         protected SerializableClosure $mapper,
         protected string $fileName,
     ) {
@@ -44,6 +46,8 @@ class ExportChunkJob implements ShouldQueue
         $csv = Writer::createFromString();
         $csv->insertAll($query->find($this->records)->map($mapper)->all());
 
-        Storage::append("exports/{$this->fileName}", $csv->toString());
+        $paddedPageNumber = str_pad(strval($this->page), 16, '0', STR_PAD_LEFT);
+
+        Storage::put("exports/{$this->fileName}/{$paddedPageNumber}.csv", $csv->toString(), Filesystem::VISIBILITY_PRIVATE);
     }
 }

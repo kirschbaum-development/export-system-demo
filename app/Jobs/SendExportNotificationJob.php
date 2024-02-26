@@ -10,7 +10,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 
 class SendExportNotificationJob implements ShouldQueue
 {
@@ -33,7 +33,7 @@ class SendExportNotificationJob implements ShouldQueue
      */
     public function handle(): void
     {
-        $csvUrl = Storage::temporaryUrl("exports/{$this->fileName}", now()->addDay());
+        $csvUrl = URL::signedRoute('exports.show', ['fileName' => $this->fileName]);
 
         Notification::make()
             ->title('Export completed')

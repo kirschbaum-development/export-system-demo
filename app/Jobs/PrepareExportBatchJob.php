@@ -44,17 +44,22 @@ class PrepareExportBatchJob implements ShouldQueue
         $baseQuery = $query->toBase();
         $baseQuery->distinct($qualifiedKeyName);
 
+        $page = 1;
+
         $baseQuery
             ->select([$qualifiedKeyName])
             ->chunkById(
                 100,
-                function (Collection $records) use ($keyName, &$recordRows) {
+                function (Collection $records) use ($keyName, &$page) {
                     $this->batch()->add(new ExportChunkJob(
                         query: $this->query,
                         records: Arr::pluck($records->all(), $keyName),
+                        page: $page,
                         mapper: $this->mapper,
                         fileName: $this->fileName,
                     ));
+
+                    $page++;
                 },
                 column: $qualifiedKeyName,
                 alias: $keyName,

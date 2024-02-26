@@ -57,10 +57,9 @@ class ExportJob implements ShouldQueue
             ->plural()
             ->snake()
             ->append('-')
-            ->append(Str::random())
-            ->append('.csv');
+            ->append(Str::random());
 
-        Storage::put("exports/{$fileName}", $csv->toString(), options: Filesystem::VISIBILITY_PRIVATE);
+        Storage::put("exports/{$fileName}/headers.csv", $csv->toString(), options: Filesystem::VISIBILITY_PRIVATE);
 
         Bus::chain([
             Bus::batch([

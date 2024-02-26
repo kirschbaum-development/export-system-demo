@@ -13,6 +13,7 @@
         "filament/notifications": "^3.2",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^10.10",
+        "laravel/horizon": "^5.23",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",
         "league/csv": "^9.15"

@@ -2,12 +2,14 @@
 
 namespace App\Jobs;
 
+use AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade;
 use App\Models\User;
 use Closure;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -23,18 +25,21 @@ class ExportJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
+    protected string $query;
+
     protected SerializableClosure $mapper;
 
     /**
      * Create a new job instance.
      */
     public function __construct(
-        protected string $model,
+        Builder $query,
         protected array $header,
         protected array $records,
         Closure $mapper,
         protected User $user,
     ) {
+        $this->query = EloquentSerializeFacade::serialize($query);
         $this->mapper = new SerializableClosure($mapper);
     }
 
@@ -43,11 +48,13 @@ class ExportJob implements ShouldQueue
      */
     public function handle(): void
     {
+        $query = EloquentSerializeFacade::unserialize($this->query);
+
         $csv = Writer::createFromString();
         $csv->insertOne($this->header);
-        $csv->insertAll($this->model::find($this->records)->map($this->mapper->getClosure())->all());
+        $csv->insertAll($query->find($this->records)->map($this->mapper->getClosure())->all());
 
-        $fileName = str($this->model)
+        $fileName = str($query->getModel()::class)
             ->classBasename()
             ->plural()
             ->snake()

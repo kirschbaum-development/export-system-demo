@@ -32,13 +32,13 @@ class Table extends Component
     public function export(): void
     {
         dispatch(new ExportJob(
-            model: User::class,
+            query: $this->getQuery()->getQuery(),
             header: ['name', 'email', 'role'],
             records: $this->getQuery()->pluck('users.id')->all(),
             mapper: fn (User $user): array => [
                 $user->name,
                 $user->email,
-                $user->pivot?->role,
+                $user->role,
             ],
             user: auth()->user(),
         ));

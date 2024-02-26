@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Jobs\ExportJob;
 use App\Models\Team;
 use App\Models\User;
 use Filament\Notifications\Notification;
@@ -9,10 +10,8 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
-use League\Csv\Writer;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class Table extends Component
 {
@@ -30,30 +29,24 @@ class Table extends Component
         $this->resetPage();
     }
 
-    public function export(): StreamedResponse
+    public function export(): void
     {
-        $header = ['name', 'email', 'role'];
-        $records = $this->getQuery()->get()->map(fn (User $user): array => [
-            $user->name,
-            $user->email,
-            $user->pivot->role,
-        ])->all();
-
-        $csv = Writer::createFromString();
-        $csv->insertOne($header);
-        $csv->insertAll($records);
+        dispatch(new ExportJob(
+            model: User::class,
+            header: ['name', 'email', 'role'],
+            records: $this->getQuery()->pluck('users.id')->all(),
+            mapper: fn (User $user): array => [
+                $user->name,
+                $user->email,
+                $user->pivot?->role,
+            ],
+            user: auth()->user(),
+        ));
 
         Notification::make()
-            ->title('Export completed')
-            ->body('Downloading...')
+            ->title('Export started')
             ->info()
             ->send();
-
-        return response()->streamDownload(
-            fn () => print($csv->toString()),
-            'users.csv',
-            ['Content-Type' => 'text/csv'],
-        );
     }
 
     public function getQuery(): BelongsToMany

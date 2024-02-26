@@ -6,6 +6,7 @@ use AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade;
 use App\Models\User;
 use Closure;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -59,7 +60,7 @@ class ExportJob implements ShouldQueue
             ->append(Str::random())
             ->append('.csv');
 
-        Storage::put("exports/{$fileName}", $csv->toString(), options: 'private');
+        Storage::put("exports/{$fileName}", $csv->toString(), options: Filesystem::VISIBILITY_PRIVATE);
 
         Bus::chain([
             Bus::batch([

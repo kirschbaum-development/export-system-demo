@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -51,7 +52,18 @@ class ExportJob implements ShouldQueue
 
         $csv = Writer::createFromString();
         $csv->insertOne($this->header);
-        $csv->insertAll($query->get()->map($this->mapper->getClosure())->all());
+
+        $recordRows = [];
+        $mapper = $this->mapper->getClosure();
+
+        $query->chunkById(100, function (Collection $records) use ($mapper, &$recordRows) {
+            $recordRows = [
+                ...$recordRows,
+                ...$records->map($mapper)->all(),
+            ];
+        }, column: $query->getModel()->getQualifiedKeyName(), alias: $query->getModel()->getKeyName());
+
+        $csv->insertAll($recordRows);
 
         $fileName = str($query->getModel()::class)
             ->classBasename()

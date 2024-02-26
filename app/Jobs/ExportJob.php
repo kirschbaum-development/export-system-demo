@@ -35,7 +35,6 @@ class ExportJob implements ShouldQueue
     public function __construct(
         Builder $query,
         protected array $header,
-        protected array $records,
         Closure $mapper,
         protected User $user,
     ) {
@@ -52,7 +51,7 @@ class ExportJob implements ShouldQueue
 
         $csv = Writer::createFromString();
         $csv->insertOne($this->header);
-        $csv->insertAll($query->find($this->records)->map($this->mapper->getClosure())->all());
+        $csv->insertAll($query->get()->map($this->mapper->getClosure())->all());
 
         $fileName = str($query->getModel()::class)
             ->classBasename()

@@ -34,7 +34,6 @@ class Table extends Component
         dispatch(new ExportJob(
             query: $this->getQuery()->getQuery(),
             header: ['name', 'email', 'role'],
-            records: $this->getQuery()->pluck('users.id')->all(),
             mapper: fn (User $user): array => [
                 $user->name,
                 $user->email,
